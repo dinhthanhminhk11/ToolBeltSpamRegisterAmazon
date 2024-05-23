@@ -1,5 +1,7 @@
 package code.name.monkey.toolbelt;
 
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -13,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -32,18 +35,23 @@ public class UiAutomatorTest {
     private Random random;
     private int mWight;
     private int mHeight;
+    private int displayWidth;
+    private int displayHeight;
 
+    private int capcheStartX = 0;
+    private int capcheStatY = 0;
+    private int safeDistance = 150;
     @Before
     public void setUp() {
         random = new Random();
-        mWight = mDevice.getDisplayWidth();
-        mHeight = mDevice.getDisplayHeight();
         try {
             mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
             mDevice.wakeUp();
         } catch (Exception e) {
             Log.d("MinhOke", "Exception: " + e.getMessage());
         }
+        displayWidth = mDevice.getDisplayWidth();
+        displayHeight = mDevice.getDisplayHeight();
     }
 
 
@@ -100,8 +108,6 @@ public class UiAutomatorTest {
 //                }
 //            }
 //            sleep();
-            int displayWidth = mDevice.getDisplayWidth();
-            int displayHeight = mDevice.getDisplayHeight();
 
             // Calculate the start and end points of the swipe
             int startX = displayWidth / 2;
@@ -149,35 +155,113 @@ public class UiAutomatorTest {
         }
     }
 
+    // kịch bản 1 vốt châm
     private void scripRightHand() {
-        Log.e("Minhoke", "Hight: " + mDevice.getDisplayHeight());
-        Log.e("Minhoke", "wight: " + mDevice.getDisplayWidth());
-        // vuốt nhanh sang trái đ
-        performSwipe(618, 1521, 846, 996, 5, 1000); // vuốt lên nhanh phải
-        mDevice.click(752, 1059);
+        performSwipeUpHasSteps(300, true);
         sleep(1000);
-//        performSwipe(606, 1609, 819, 1052, 20, 1000); //vuốt lên chậm phải
-        performSwipe(827, 1083, 754, 1400, 200, 500); //vuốt xống chậm phải
-        performSwipe(827, 1083, 754, 1500, 300, 0); //vuốt xống chậm phải
-
-
-        performSwipe(606, 1767, 857, 1091, 20, 1200); // vuốt  xuống chậm phải
-
+        performSwipeUpHasSteps(200, true);
+        sleep(1000);
+        performSwipeUpHasSteps(250, true);
+        sleep(1000);
+        performSwipeUpHasSteps(300, true);
+        sleep(1000);
+        performSwipeUpHasSteps(200, true);
+        sleep(1000);
+        performSwipeUpHasSteps(250, true);
+        sleep(1000);
+        performSwipeDownHasSteps(250, true);
+        sleep(1000);
+        performSwipeDownHasSteps(230, true);
+        sleep(1000);
+        performSwipeUp(true, true);
+        sleep(1000);
+        performSwipeDown(true, true);
     }
 
-    private void performLongPress(int x, int y) {
-        mDevice.swipe(x, y, x, y, SWIPE_STEPS); // Simulate long press by swiping to the same point
-        sleep(SWIPE_DURATION);
+
+    //
+    public void performSwipeDown(boolean isFast, boolean isRightHand) {
+        Point startPoint = getRandomPoint(displayWidth, displayHeight, false, isRightHand);
+        Point endPoint = getRandomEndPoint(displayWidth, displayHeight, startPoint, false, isRightHand);
+        int steps = isFast ? getRandomSteps(1, 15) : getRandomSteps(35, 50);
+        Rect navigationBarRect = getNavigationBarRect();
+        if (navigationBarRect.contains(endPoint.x, endPoint.y)) {
+            endPoint.y = navigationBarRect.bottom + safeDistance;
+        }
+        mDevice.swipe(startPoint.x, startPoint.y, endPoint.x, endPoint.y, steps);
+        if (isFast) {
+            sleep(500);
+            Point midPoint = getMidPoint(startPoint, endPoint);
+            mDevice.click(midPoint.x, midPoint.y);
+        }
     }
 
-    private void performShowPress(int x, int y) {
-        mDevice.swipe(x, y, x, y, SWIPE_STEPS); // Simulate show press by swiping to the same point
-        sleep(SWIPE_DURATION); // Shorter duration than long press
+    public void performSwipeUp(boolean isFast, boolean isRightHand) {
+        Point startPoint = getRandomPoint(displayWidth, displayHeight, true, isRightHand);
+        Point endPoint = getRandomEndPoint(displayWidth, displayHeight, startPoint, true, isRightHand);
+        int steps = isFast ? getRandomSteps(1, 15) : getRandomSteps(35, 50);
+        Rect navigationBarRect = getNavigationBarRect();
+        if (navigationBarRect.contains(startPoint.x, startPoint.y)) {
+            startPoint.y = navigationBarRect.bottom + safeDistance;
+        }
+        mDevice.swipe(startPoint.x, startPoint.y, endPoint.x, endPoint.y, steps);
     }
 
-    private void performSwipe(double startX, double startY, double endX, double endY, int swipeSteps, int swipeDuration) {
-        mDevice.swipe((int) startX, (int) startY, (int) endX, (int) endY, swipeSteps);
-        sleep(swipeDuration);
+    public void performSwipeUpHasSteps(int step, boolean isRightHand) {
+        Point startPoint = getRandomPoint(displayWidth, displayHeight, true, isRightHand);
+        Point endPoint = getRandomEndPoint(displayWidth, displayHeight, startPoint, true, isRightHand);
+        Rect navigationBarRect = getNavigationBarRect();
+        if (navigationBarRect.contains(startPoint.x, startPoint.y)) {
+            startPoint.y = navigationBarRect.bottom + safeDistance;
+        }
+        mDevice.swipe(startPoint.x, startPoint.y, endPoint.x, endPoint.y, step);
+    }
+
+    public void performSwipeDownHasSteps(int step, boolean isRightHand) {
+        Point startPoint = getRandomPoint(displayWidth, displayHeight, false, isRightHand);
+        Point endPoint = getRandomEndPoint(displayWidth, displayHeight, startPoint, false, isRightHand);
+
+        Rect navigationBarRect = getNavigationBarRect();
+        if (navigationBarRect.contains(endPoint.x, endPoint.y)) {
+            endPoint.y = navigationBarRect.bottom + safeDistance;
+        }
+        mDevice.swipe(startPoint.x, startPoint.y, endPoint.x, endPoint.y, step);
+    }
+
+    private Rect getNavigationBarRect() {
+        Rect rect = new Rect(0, displayHeight - safeDistance, displayWidth, displayHeight);
+        return rect;
+    }
+
+    private Point getMidPoint(Point startPoint, Point endPoint) {
+        int midX = (startPoint.x + endPoint.x) / 2;
+        int midY = (startPoint.y + endPoint.y) / 2;
+        return new Point(midX, midY);
+    }
+
+    private int getRandomSteps(int min, int max) {
+        return min + (int) (Math.random() * (max - min + 1));
+    }
+
+    private Point getRandomPoint(int width, int height, boolean isBottomHalf, boolean isRightHand) {
+        int x = isRightHand ? (int) (width / 2 + Math.random() * (width / 2)) : (int) (Math.random() * (width / 2));
+        int y = isBottomHalf ? (int) (height / 2 + Math.random() * (height / 2)) : (int) (Math.random() * (height / 2));
+        return new Point(x, y);
+    }
+
+    private Point getRandomEndPoint(int width, int height, Point startPoint, boolean isSwipeUp, boolean isRightHand) {
+        int x = isRightHand ? (int) (width / 2 + Math.random() * (width / 2)) : (int) (Math.random() * (width / 2));
+        int maxSwipeDistance = (int) (height * 4 / 5);
+        int minSwipeDistance = (int) (height / 5);
+        int swipeDistance = minSwipeDistance + (int) (Math.random() * (maxSwipeDistance - minSwipeDistance));
+
+        int y;
+        if (isSwipeUp) {
+            y = Math.max(startPoint.y - swipeDistance, 0);
+        } else {
+            y = Math.min(startPoint.y + swipeDistance, height);
+        }
+        return new Point(x, y);
     }
 
     public void wakeUpDevices() {
@@ -229,13 +313,8 @@ public class UiAutomatorTest {
         }
     }
 
-    private int getRandomInRange(int min, int max) {
-        return min + (max - min) * random.nextInt();
-    }
-
     public static void main(String[] args) {
         UiAutomatorTest uiAutomatorTest = new UiAutomatorTest();
-        System.out.println("total : " + uiAutomatorTest.getRandomInRange(uiAutomatorTest));
     }
 
 }
